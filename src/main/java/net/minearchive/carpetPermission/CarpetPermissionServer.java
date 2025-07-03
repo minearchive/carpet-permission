@@ -49,7 +49,7 @@ public class CarpetPermissionServer implements CarpetExtension {
 
     @Override
     public void onServerLoaded(MinecraftServer server) {
-        if (file == null) file = new File(server.getServerDirectory(), "config/carpetPermission.json");
+        if (file == null) file = new File(server.getServerDirectory().toFile(), "config/carpetPermission.json");
         if (!fileCheck(file)) return;
 
         loadData(file);
@@ -59,8 +59,36 @@ public class CarpetPermissionServer implements CarpetExtension {
     @Override
     public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandBuildContext) {
         LiteralArgumentBuilder<CommandSourceStack> command = literal("carpet-permission")
+                .executes(context -> {
+                    Messenger.m(context.getSource(), "gi Carpet Permission Command");
+                    Messenger.m(context.getSource(), "gi Use /carpet-permission <player> to view or change permission level");
+                    Messenger.m(context.getSource(), "gi Permission levels:");
+                    Messenger.m(context.getSource(), "gi 0 - No permission");
+                    Messenger.m(context.getSource(), "gi 1 - Can use /player command");
+                    Messenger.m(context.getSource(), "gi 2 - Can use /carpet and /player command");
+                    Messenger.m(context.getSource(), "gi Use /carpet-permission <player> <level> to change permission level");
+                    return 1;
+                })
                 .requires(source -> source.hasPermission(4))
                 .then(argument("player", StringArgumentType.word())
+                        .executes(context -> {
+                            ServerPlayer player = context.getSource().getServer().getPlayerList().getPlayerByName(StringArgumentType.getString(context, "player"));
+                            if (player == null) {
+                                Messenger.m(context.getSource(), "r Player not found");
+                                return 0;
+                            }
+                            PermissionLevel level = permissionLevels.getOrDefault(player.getUUID(), new PermissionLevel(player.getName().getString(), 0));
+                            String levelString;
+                            switch (level.level()) {
+                                case 0 -> levelString = "No permission";
+                                case 1 -> levelString = "Can use /player command";
+                                case 2 -> levelString = "Can use /carpet and /player command";
+                                default -> levelString = "Unknown permission level";
+                            }
+                            Messenger.m(context.getSource(), "gi Player: " + level.mcid() + " | Level: " + level.level() + " (" + levelString + ")");
+                            Messenger.m(context.getSource(), "gi Use /carpet-permission <player> <level> to change permission level");
+                            return 1;
+                        })
                         .suggests((context, builder) -> suggest(getPlayerSuggestions(context.getSource()), builder))
                         .then(literal("level")
                                 .then(literal("0")
@@ -107,7 +135,7 @@ public class CarpetPermissionServer implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
-        if (file == null) file = new File(server.getServerDirectory(), "config/carpetPermission.json");
+        if (file == null) file = new File(server.getServerDirectory().toFile(), "config/carpetPermission.json");
         if (!fileCheck(file)) return;
 
         saveData(file);
