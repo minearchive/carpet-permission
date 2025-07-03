@@ -31,7 +31,7 @@ public class CarpetPermissionServer implements CarpetExtension {
     private static CarpetPermissionServer INSTANCE;
     public static Logger LOGGER = LoggerFactory.getLogger("CarpetPermission");
     private File file;
-;
+
     // Map of player UUIDs to their permission level
     // 0 -> no permission
     // 1 -> can use /player command
